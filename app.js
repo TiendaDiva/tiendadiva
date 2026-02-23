@@ -244,7 +244,9 @@ const categoriasAdultosSolo = ['camisas']; // Exclusivo de adultos
 const categoriaConjuntos = ['conjuntos']; // Compartido (nos sirve de separador)
 const categoriasInfantilesMedio = ['shorts']; // Exclusivo infantil (entre conjuntos y polleras)
 const categoriasFinales = ['polleras', 'camperas', 'accesorios']; // Compartidos
-const categoriasInfantilesFinal = ['mallas', 'disfraces']; // Exclusivo infantil al final
+const categoriasInfantilesFinal = ['mallas', 'disfraces']; // Exclusivo infantil
+const categoriasAdultosFinal = ['buzo', 'sweater']; // Exclusivo adultos
+const categoriaImportado = ['linea importado']; // Compartido al final de todo
 
 // Función centralizada para saber qué categorías mostrar en el orden exacto
 function getCategoriasSegunPublico(publico) {
@@ -266,10 +268,18 @@ function getCategoriasSegunPublico(publico) {
     // 4. Sumamos Polleras, Camperas y Accesorios (compartidos)
     cats = cats.concat(categoriasFinales);
     
-    // 5. Si es Infantiles o Todos, cerramos con Mallas y Disfraces
+    // 5. Si es Infantiles o Todos, sumamos Mallas y Disfraces
     if (publico === 'infantiles' || publico === 'todos') {
         cats = cats.concat(categoriasInfantilesFinal);
     }
+
+    // 6. Si es Adultos o Todos, sumamos Buzo y Sweater
+    if (publico === 'adultos' || publico === 'todos') {
+        cats = cats.concat(categoriasAdultosFinal);
+    }
+    
+    // 7. Línea Importado va al final de la lista para AMBOS públicos
+    cats = cats.concat(categoriaImportado);
     
     return cats;
 }
