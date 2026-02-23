@@ -240,25 +240,35 @@ setTimeout(() => {
 
 // --- LÓGICA DE CATEGORÍAS DINÁMICAS ---
 const categoriasBasicas = ['remeras', 'pantalones', 'vestidos'];
-const categoriasAdultosSolo = ['camisas']; // Exclusivo de adultos (va después de vestidos)
-const categoriasComunesResto = ['conjuntos', 'polleras', 'camperas', 'accesorios'];
-const categoriasInfantilesSolo = ['mallas', 'disfraces'];
+const categoriasAdultosSolo = ['camisas']; // Exclusivo de adultos
+const categoriaConjuntos = ['conjuntos']; // Compartido (nos sirve de separador)
+const categoriasInfantilesMedio = ['shorts']; // Exclusivo infantil (entre conjuntos y polleras)
+const categoriasFinales = ['polleras', 'camperas', 'accesorios']; // Compartidos
+const categoriasInfantilesFinal = ['mallas', 'disfraces']; // Exclusivo infantil al final
 
-// Función centralizada para saber qué categorías mostrar
+// Función centralizada para saber qué categorías mostrar en el orden exacto
 function getCategoriasSegunPublico(publico) {
     let cats = [...categoriasBasicas];
     
-    // Si es Adultos o Todos, sumamos Camisas
+    // 1. Si es Adultos o Todos, sumamos Camisas
     if (publico === 'adultos' || publico === 'todos') {
         cats = cats.concat(categoriasAdultosSolo);
     }
     
-    // Sumamos las que comparten ambos
-    cats = cats.concat(categoriasComunesResto);
+    // 2. Sumamos Conjuntos (compartido)
+    cats = cats.concat(categoriaConjuntos);
     
-    // Si es Infantiles o Todos, sumamos las de niños
+    // 3. Si es Infantiles o Todos, metemos Shorts acá en el medio
     if (publico === 'infantiles' || publico === 'todos') {
-        cats = cats.concat(categoriasInfantilesSolo);
+        cats = cats.concat(categoriasInfantilesMedio);
+    }
+    
+    // 4. Sumamos Polleras, Camperas y Accesorios (compartidos)
+    cats = cats.concat(categoriasFinales);
+    
+    // 5. Si es Infantiles o Todos, cerramos con Mallas y Disfraces
+    if (publico === 'infantiles' || publico === 'todos') {
+        cats = cats.concat(categoriasInfantilesFinal);
     }
     
     return cats;
@@ -461,10 +471,10 @@ function switchAudience(aud) {
     document.getElementById('btn-' + aud).classList.add('active');
     document.getElementById('collection-title').innerText = aud === 'todos' ? 'Colección Completa' : "Colección " + aud.charAt(0).toUpperCase() + aud.slice(1);
     
-    // Reseteamos a 'todos' si la categoría actual no existe en el nuevo público seleccionado
-    if (aud === 'adultos' && categoriasInfantilesSolo.includes(currentCategory)) {
-        currentCategory = 'todos';
-    } else if (aud === 'infantiles' && categoriasAdultosSolo.includes(currentCategory)) {
+    // Verificamos de forma inteligente si la categoría en la que estaba el usuario 
+    // existe en el nuevo público seleccionado. Si no existe, reseteamos a 'todos'.
+    const categoriasValidas = getCategoriasSegunPublico(aud);
+    if (currentCategory !== 'todos' && !categoriasValidas.includes(currentCategory)) {
         currentCategory = 'todos';
     }
     
