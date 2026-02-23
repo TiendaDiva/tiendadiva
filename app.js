@@ -239,18 +239,36 @@ setTimeout(() => {
 }, 500);
 
 // --- LÓGICA DE CATEGORÍAS DINÁMICAS ---
-const categoriasComunes = ['remeras', 'pantalones', 'vestidos', 'conjuntos', 'polleras', 'camperas', 'accesorios'];
+const categoriasBasicas = ['remeras', 'pantalones', 'vestidos'];
+const categoriasAdultosSolo = ['camisas']; // Exclusivo de adultos (va después de vestidos)
+const categoriasComunesResto = ['conjuntos', 'polleras', 'camperas', 'accesorios'];
 const categoriasInfantilesSolo = ['mallas', 'disfraces'];
+
+// Función centralizada para saber qué categorías mostrar
+function getCategoriasSegunPublico(publico) {
+    let cats = [...categoriasBasicas];
+    
+    // Si es Adultos o Todos, sumamos Camisas
+    if (publico === 'adultos' || publico === 'todos') {
+        cats = cats.concat(categoriasAdultosSolo);
+    }
+    
+    // Sumamos las que comparten ambos
+    cats = cats.concat(categoriasComunesResto);
+    
+    // Si es Infantiles o Todos, sumamos las de niños
+    if (publico === 'infantiles' || publico === 'todos') {
+        cats = cats.concat(categoriasInfantilesSolo);
+    }
+    
+    return cats;
+}
 
 function renderCategoryNav() {
     const nav = document.getElementById('dynamic-category-nav');
     if(!nav) return;
     
-    // Armamos la lista de categorías a mostrar según el público actual
-    let cats = [...categoriasComunes];
-    if (currentAudience === 'infantiles' || currentAudience === 'todos') {
-        cats = cats.concat(categoriasInfantilesSolo);
-    }
+    let cats = getCategoriasSegunPublico(currentAudience);
 
     let html = `<button class="cat-btn ${currentCategory === 'todos' ? 'active' : ''}" onclick="filterCategory('todos', this)">Todo</button>`;
     cats.forEach(cat => {
@@ -266,10 +284,7 @@ function actualizarCategoriasSelect(selectPublicoId, selectCategoriaId, categori
     const selectCat = document.getElementById(selectCategoriaId);
     if (!selectCat) return;
 
-    let opciones = [...categoriasComunes];
-    if (publico === 'infantiles') {
-        opciones = opciones.concat(categoriasInfantilesSolo);
-    }
+    let opciones = getCategoriasSegunPublico(publico);
 
     selectCat.innerHTML = '';
     opciones.forEach(cat => {
@@ -446,8 +461,10 @@ function switchAudience(aud) {
     document.getElementById('btn-' + aud).classList.add('active');
     document.getElementById('collection-title').innerText = aud === 'todos' ? 'Colección Completa' : "Colección " + aud.charAt(0).toUpperCase() + aud.slice(1);
     
-    // Si pasamos a "Adultos" y estaba seleccionada una categoría exclusiva de niños, reseteamos a 'todos'
+    // Reseteamos a 'todos' si la categoría actual no existe en el nuevo público seleccionado
     if (aud === 'adultos' && categoriasInfantilesSolo.includes(currentCategory)) {
+        currentCategory = 'todos';
+    } else if (aud === 'infantiles' && categoriasAdultosSolo.includes(currentCategory)) {
         currentCategory = 'todos';
     }
     
