@@ -422,25 +422,20 @@ function finalizarCompraInstagram() {
     msg += `Subtotal Productos: $${total.toLocaleString('es-AR')}\n`;
     msg += (deliveryOption === 'envio') ? `Modo de Entrega: ENVÍO A DOMICILIO 🚚\n(El costo del envío lo coordinamos por aquí)` : `Modo de Entrega: RETIRO EN LOCAL 🛍️\n`;
 
-    // COPIAR Y ABRIR
-    navigator.clipboard.writeText(msg).then(() => {
-        // Alerta con instrucciones precisas para el usuario
-        alert("✅ ¡PEDIDO COPIADO!\n\nSe abrirá el chat de Instagram.\n\n👉 Solo tenés que mantener presionado, PEGAR el pedido copiado y enviarlo!");
-        
-        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-        let url = "";
+    // 1. Usamos el enlace universal oficial de Meta (funciona en web y abre la app en celulares)
+    const url = `https://ig.me/m/${INSTAGRAM_USER}`;
 
-        if (isMobile) {
-            // Intenta abrir la app directamente en el chat
-            url = `instagram://direct_message?username=${INSTAGRAM_USER}`;
-        } else {
-            // Versión web
-            url = `https://ig.me/m/${INSTAGRAM_USER}`;
-        }
-        window.open(url, '_blank');
+    // 2. Intentar copiar al portapapeles
+    navigator.clipboard.writeText(msg).then(() => {
+        alert("✅ ¡PEDIDO COPIADO!\n\nSerás redirigido a Instagram.\n\n👉 Solo tenés que mantener presionado en el chat, PEGAR el pedido y enviarlo!");
+        
+        // 3. Redirigimos en la misma pestaña para evitar que el celular bloquee la acción
+        window.location.href = url;
+        
     }).catch(err => {
-        alert("No se pudo copiar el pedido automáticamente. Por favor hacé captura.");
-        console.error('Error al copiar: ', err);
+        // Si falla la copia (algunos navegadores viejos lo bloquean), avisamos pero redirigimos igual
+        alert("Tu navegador no permitió copiar el pedido automáticamente. Por favor hacé captura de pantalla del carrito.\n\nTe vamos a redirigir a nuestro Instagram.");
+        window.location.href = url;
     });
 }
 
