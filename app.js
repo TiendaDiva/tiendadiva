@@ -16,14 +16,35 @@ const auth = firebase.auth();
 // --- CONSTANTES Y VARIABLES ---
 const ADMIN_EMAIL = "pepito@gmail.com"; 
 const INSTAGRAM_USER = "diva_rosario1167"; // <--- CAMBIAR POR TU USUARIO REAL (SIN ARROBA)
+const WHATSAPP_NUMBER = "5493412777481"; // <--- CAMBIAR POR TU NÚMERO DE WHATSAPP REAL (CÓDIGO DE PAÍS Y ÁREA, SIN EL +)
 
 let currentAudience = 'todos';
 let currentCategory = 'todos';
 let allProducts = [];
 let cart = [];
 let cartUnsubscribe = null;
+let statsUnsubscribe = null; // <--- Para el panel de administrador
 let selectedSize = null; 
 let deliveryOption = 'retiro'; // 'retiro' o 'envio'
+
+// --- TRACKING DE VISITAS AUTOMÁTICO ---
+function registrarVisita() {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    const dateString = `${year}-${month}-${day}`; 
+
+    const docRef = db.collection('estadisticas').doc(dateString);
+    
+    // Sumamos +1 a las visitas de hoy
+    docRef.set({
+        visitas: firebase.firestore.FieldValue.increment(1),
+        fecha: dateString
+    }, { merge: true }).catch(e => console.error("Error al registrar visita: ", e));
+}
+// Registramos la visita al abrir la web
+registrarVisita();
 
 // --- LÓGICA DEL CARRUSEL DE BANNERS ---
 let heroImages = [
@@ -101,6 +122,43 @@ function saveDataFiscalConfig() {
         .catch(e => alert("Error: " + e.message));
 }
 
+// --- VISUALIZAR ESTADÍSTICAS (SÓLO ADMIN) ---
+function cargarEstadisticas() {
+    const container = document.getElementById('admin-stats-container');
+    if (!container) return;
+
+    // Pedimos los últimos 7 días registrados
+    statsUnsubscribe = db.collection('estadisticas')
+        .orderBy('fecha', 'desc')
+        .limit(7)
+        .onSnapshot(snapshot => {
+            let html = '<div style="background:#3d4648; padding:15px; border-radius:6px; width:100%; box-sizing:border-box;">';
+            html += '<h4 style="margin-top:0; color:var(--accent); font-size:1rem;">Visitas de los últimos 7 días</h4>';
+            
+            if (snapshot.empty) {
+                html += '<p style="color:#bbb; font-size:0.9rem;">No hay datos registrados aún.</p>';
+            } else {
+                html += '<ul style="list-style:none; padding:0; margin:0; width:100%;">';
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    const partesFecha = data.fecha.split('-');
+                    const fechaFormat = partesFecha.length === 3 ? `${partesFecha[2]}/${partesFecha[1]}/${partesFecha[0]}` : data.fecha;
+                    
+                    html += `<li style="display:flex; justify-content:space-between; border-bottom:1px solid #555; padding:8px 0; font-size:0.95rem;">
+                                <span style="color:#ccc;">📅 ${fechaFormat}</span>
+                                <span style="font-weight:bold; color:white; background:var(--accent); padding:2px 8px; border-radius:12px; font-size:0.85rem;">${data.visitas} visitas</span>
+                             </li>`;
+                });
+                html += '</ul>';
+            }
+            html += '</div>';
+            container.innerHTML = html;
+        }, error => {
+            console.error("Error cargando estadísticas: ", error);
+            container.innerHTML = '<p style="color:#ff6b6b;">Error al cargar datos.</p>';
+        });
+}
+
 // --- AUTH ---
 auth.onAuthStateChanged(user => {
     const btnLogin = document.getElementById('btn-login-trigger');
@@ -111,7 +169,15 @@ auth.onAuthStateChanged(user => {
         btnLogin.style.display = 'none';
         userDisplay.style.display = 'flex';
         document.getElementById('user-email-text').innerText = "Hola, " + user.email.split('@')[0];
-        adminPanel.style.display = (user.email === ADMIN_EMAIL) ? 'block' : 'none';
+        
+        if (user.email === ADMIN_EMAIL) {
+            adminPanel.style.display = 'block';
+            cargarEstadisticas(); // Cargamos métricas si es admin
+        } else {
+            adminPanel.style.display = 'none';
+            if (statsUnsubscribe) statsUnsubscribe();
+        }
+
         cartUnsubscribe = db.collection('carts').doc(user.uid)
             .onSnapshot((doc) => {
                 cart = doc.exists ? (doc.data().items || []) : [];
@@ -122,6 +188,7 @@ auth.onAuthStateChanged(user => {
         userDisplay.style.display = 'none';
         adminPanel.style.display = 'none';
         if (cartUnsubscribe) cartUnsubscribe();
+        if (statsUnsubscribe) statsUnsubscribe();
         cart = [];
         renderCartUI();
     }
@@ -398,7 +465,7 @@ function renderCartUI() {
     document.getElementById('cart-total').innerText = "$ " + total.toLocaleString('es-AR'); document.getElementById('cart-count').innerText = count;
 }
 
-// --- LOGICA ENVIO E INSTAGRAM ---
+// --- LOGICA ENVIO E WHATSAPP ---
 function setDeliveryOption(option) {
     deliveryOption = option;
     document.getElementById('opt-retiro').classList.remove('selected');
@@ -408,7 +475,7 @@ function setDeliveryOption(option) {
     msgEnvio.style.display = (option === 'envio') ? 'block' : 'none';
 }
 
-function finalizarCompraInstagram() {
+function finalizarCompraWhatsapp() {
     if(cart.length === 0) return alert("El carrito está vacío.");
 
     let total = 0;
@@ -422,21 +489,9 @@ function finalizarCompraInstagram() {
     msg += `Subtotal Productos: $${total.toLocaleString('es-AR')}\n`;
     msg += (deliveryOption === 'envio') ? `Modo de Entrega: ENVÍO A DOMICILIO 🚚\n(El costo del envío lo coordinamos por aquí)` : `Modo de Entrega: RETIRO EN LOCAL 🛍️\n`;
 
-    // 1. Usamos el enlace universal oficial de Meta (funciona en web y abre la app en celulares)
-    const url = `https://ig.me/m/${INSTAGRAM_USER}`;
-
-    // 2. Intentar copiar al portapapeles
-    navigator.clipboard.writeText(msg).then(() => {
-        alert("✅ ¡PEDIDO COPIADO!\n\nSerás redirigido a Instagram.\n\n👉 Solo tenés que mantener presionado en el chat, PEGAR el pedido y enviarlo!");
-        
-        // 3. Redirigimos en la misma pestaña para evitar que el celular bloquee la acción
-        window.location.href = url;
-        
-    }).catch(err => {
-        // Si falla la copia (algunos navegadores viejos lo bloquean), avisamos pero redirigimos igual
-        alert("Tu navegador no permitió copiar el pedido automáticamente. Por favor hacé captura de pantalla del carrito.\n\nTe vamos a redirigir a nuestro Instagram.");
-        window.location.href = url;
-    });
+    // Redirigimos directamente a WhatsApp con el mensaje prearmado
+    const url = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`;
+    window.open(url, '_blank');
 }
 
 // --- RENDERIZADO ---
@@ -476,14 +531,12 @@ function switchAudience(aud) {
     document.getElementById('btn-' + aud).classList.add('active');
     document.getElementById('collection-title').innerText = aud === 'todos' ? 'Colección Completa' : "Colección " + aud.charAt(0).toUpperCase() + aud.slice(1);
     
-    // Verificamos de forma inteligente si la categoría en la que estaba el usuario 
-    // existe en el nuevo público seleccionado. Si no existe, reseteamos a 'todos'.
     const categoriasValidas = getCategoriasSegunPublico(aud);
     if (currentCategory !== 'todos' && !categoriasValidas.includes(currentCategory)) {
         currentCategory = 'todos';
     }
     
-    renderCategoryNav(); // Recarga los botones de categoría
+    renderCategoryNav(); 
     renderProducts();
 }
 function filterCategory(cat, btn) {
