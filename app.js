@@ -317,69 +317,69 @@ const categoriaImportado = ['linea importado']; // Compartido al final de todo
 
 // Función centralizada para saber qué categorías mostrar en el orden exacto
 function getCategoriasSegunPublico(publico) {
-    let cats = [...categoriasBasicas];
-    
-    // 1. Si es Adultos o Todos, sumamos Camisas
-    if (publico === 'adultos' || publico === 'todos') {
-        cats = cats.concat(categoriasAdultosSolo);
-    }
-    
-    // 2. Sumamos Conjuntos (compartido)
-    cats = cats.concat(categoriaConjuntos);
-    
-    // 3. Si es Infantiles o Todos, metemos Shorts acá en el medio
-    if (publico === 'infantiles' || publico === 'todos') {
-        cats = cats.concat(categoriasInfantilesMedio);
-    }
-    
-    // 4. Sumamos Polleras, Camperas, Accesorios y Buzos (compartidos)
-    cats = cats.concat(categoriasFinales);
-    
-    // 5. Si es Infantiles o Todos, sumamos Mallas y Disfraces
-    if (publico === 'infantiles' || publico === 'todos') {
-        cats = cats.concat(categoriasInfantilesFinal);
-    }
+  let cats = [...categoriasBasicas];
+  
+  // 1. Si es Adultos o Todos, sumamos Camisas
+  if (publico === 'adultos' || publico === 'todos') {
+    cats = cats.concat(categoriasAdultosSolo);
+  }
+  
+  // 2. Sumamos Conjuntos (compartido)
+  cats = cats.concat(categoriaConjuntos);
+  
+  // 3. Si es Infantiles o Todos, metemos Shorts acá en el medio
+  if (publico === 'infantiles' || publico === 'todos') {
+    cats = cats.concat(categoriasInfantilesMedio);
+  }
+  
+  // 4. Sumamos Polleras, Camperas, Accesorios y Buzos (compartidos)
+  cats = cats.concat(categoriasFinales);
+  
+  // 5. Si es Infantiles o Todos, sumamos Mallas y Disfraces
+  if (publico === 'infantiles' || publico === 'todos') {
+    cats = cats.concat(categoriasInfantilesFinal);
+  }
 
-    // 6. Si es Adultos o Todos, sumamos Sweater
-    if (publico === 'adultos' || publico === 'todos') {
-        cats = cats.concat(categoriasAdultosFinal);
-    }
-    
-    // 7. Línea Importado va al final de la lista para AMBOS públicos
-    cats = cats.concat(categoriaImportado);
-    
-    // Retornamos las categorías eliminando cualquier posible duplicado automáticamente
-    return [...new Set(cats)];
+  // 6. Si es Adultos o Todos, sumamos Sweater
+  if (publico === 'adultos' || publico === 'todos') {
+    cats = cats.concat(categoriasAdultosFinal);
+  }
+  
+  // 7. Línea Importado va al final de la lista para AMBOS públicos
+  cats = cats.concat(categoriaImportado);
+  
+  // Retornamos las categorías eliminando cualquier posible duplicado automáticamente
+  return [...new Set(cats)];
 }
 
 function renderCategoryNav() {
-    const nav = document.getElementById('dynamic-category-nav');
-    if(!nav) return;
-    
-    let cats = getCategoriasSegunPublico(currentAudience);
+  const nav = document.getElementById('dynamic-category-nav');
+  if(!nav) return;
+  
+  let cats = getCategoriasSegunPublico(currentAudience);
 
-    let html = `<button class="cat-btn ${currentCategory === 'todos' ? 'active' : ''}" onclick="filterCategory('todos', this)">Todo</button>`;
-    cats.forEach(cat => {
-        const isActive = (currentCategory === cat) ? 'active' : '';
-        const nombreCat = cat.charAt(0).toUpperCase() + cat.slice(1);
-        html += `<button class="cat-btn ${isActive}" onclick="filterCategory('${cat}', this)">${nombreCat}</button>`;
-    });
-    nav.innerHTML = html;
+  let html = `<button class="cat-btn ${currentCategory === 'todos' ? 'active' : ''}" onclick="filterCategory('todos', this)">Todo</button>`;
+  cats.forEach(cat => {
+    const isActive = (currentCategory === cat) ? 'active' : '';
+    const nombreCat = cat.charAt(0).toUpperCase() + cat.slice(1);
+    html += `<button class="cat-btn ${isActive}" onclick="filterCategory('${cat}', this)">${nombreCat}</button>`;
+  });
+  nav.innerHTML = html;
 }
 
 function actualizarCategoriasSelect(selectPublicoId, selectCategoriaId, categoriaElegida = '') {
-    const publico = document.getElementById(selectPublicoId).value;
-    const selectCat = document.getElementById(selectCategoriaId);
-    if (!selectCat) return;
+  const publico = document.getElementById(selectPublicoId).value;
+  const selectCat = document.getElementById(selectCategoriaId);
+  if (!selectCat) return;
 
-    let opciones = getCategoriasSegunPublico(publico);
+  let opciones = getCategoriasSegunPublico(publico);
 
-    selectCat.innerHTML = '';
-    opciones.forEach(cat => {
-        const selected = (cat === categoriaElegida) ? 'selected' : '';
-        const nombreCat = cat.charAt(0).toUpperCase() + cat.slice(1);
-        selectCat.innerHTML += `<option value="${cat}" ${selected}>${nombreCat}</option>`;
-    });
+  selectCat.innerHTML = '';
+  opciones.forEach(cat => {
+    const selected = (cat === categoriaElegida) ? 'selected' : '';
+    const nombreCat = cat.charAt(0).toUpperCase() + cat.slice(1);
+    selectCat.innerHTML += `<option value="${cat}" ${selected}>${nombreCat}</option>`;
+  });
 }
 
 // --- PRODUCTOS CRUD ---
