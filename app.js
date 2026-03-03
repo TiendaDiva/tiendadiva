@@ -315,6 +315,7 @@ const categoriasInfantilesFinal = ['mallas', 'disfraces']; // Exclusivo infantil
 const categoriasAdultosFinal = ['sweater']; // Exclusivo adultos
 const categoriaImportado = ['linea importado']; // Compartido al final de todo
 
+
 // Función centralizada para saber qué categorías mostrar en el orden exacto
 function getCategoriasSegunPublico(publico) {
   let cats = [...categoriasBasicas];
