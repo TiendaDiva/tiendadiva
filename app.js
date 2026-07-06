@@ -297,13 +297,13 @@ function registerUser() {
 
 function loginUser(){
     const e = document.getElementById('login-email').value, p = document.getElementById('login-pass').value;
-    if(!e || !p) return alert("Ingresá email y contraseña");
+    if(!e || !p) return alert("Ingrese su mail y contraseña.");
     auth.signInWithEmailAndPassword(e, p).then(() => closeModal('auth-modal')).catch((error) => alert("Error de credenciales."));
 }
 
 function validateAndRecover() {
     const email = document.getElementById('rec-email').value.trim();
-    if(!email) return alert("Completá el campo de email.");
+    if(!email) return alert("Complete el campo de email.");
 
     // Le decimos a Firebase que mande el link directamente
     auth.sendPasswordResetEmail(email)
