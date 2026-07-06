@@ -211,38 +211,13 @@ function togglePass(id) {
 
 // --- REGISTRO Y LOGIN ---
 
+// --- REGISTRO Y LOGIN ---
+
 function loginWithGoogle() {
     const provider = new firebase.auth.GoogleAuthProvider();
-    // Cambiamos signInWithPopup por signInWithRedirect
-    auth.signInWithRedirect(provider)
-        .catch((error) => {
-            console.error(error);
-            alert("Error al iniciar sesión con Google: " + error.message);
-        });
+    // Forzamos el redireccionamiento puro
+    auth.signInWithRedirect(provider);
 }
-auth.getRedirectResult()
-    .then((result) => {
-        if (result && result.user) {
-            const user = result.user;
-            
-            // Chequeamos si es la primera vez que entra para guardarlo en Firestore
-            db.collection('users').doc(user.uid).get().then((doc) => {
-                if (!doc.exists) {
-                    db.collection('users').doc(user.uid).set({
-                        nombre: user.displayName ? user.displayName.split(' ')[0] : 'Usuario',
-                        apellido: user.displayName ? user.displayName.split(' ').slice(1).join(' ') : '',
-                        email: user.email,
-                        fechaRegistro: new Date()
-                    });
-                }
-            });
-            
-            closeModal('auth-modal');
-        }
-    })
-    .catch((error) => {
-        console.error("Error al procesar el retorno de Google: ", error);
-    });
 
 function registerUser() { 
     const nombre = document.getElementById('reg-nombre').value.trim();
