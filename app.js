@@ -226,8 +226,6 @@ function togglePass(id) {
 
 // --- REGISTRO Y LOGIN ---
 
-// --- REGISTRO Y LOGIN ---
-
 function loginWithGoogle() {
     const provider = new firebase.auth.GoogleAuthProvider();
     // Forzamos el redireccionamiento puro
@@ -568,3 +566,14 @@ function toggleCart(){
 }
 function closeModal(id) { document.getElementById(id).style.display = 'none'; }
 window.onclick = function(e) { if(e.target.classList.contains('modal-overlay')) e.target.style.display='none'; }
+
+// --- DIAGNÓSTICO DE GOOGLE ---
+auth.getRedirectResult().then((result) => {
+    if (result && result.user) {
+        console.log("Inicio de sesión con Google completado.");
+        closeModal('auth-modal');
+    }
+}).catch((error) => {
+    // Esto va a hacer saltar un cartel en tu pantalla con el error exacto
+    alert("🔍 ERROR OCULTO DE GOOGLE:\nCódigo: " + error.code + "\nMensaje: " + error.message);
+});
