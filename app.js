@@ -213,11 +213,19 @@ function togglePass(id) {
 
 function loginWithGoogle() {
     const provider = new firebase.auth.GoogleAuthProvider();
-    auth.signInWithPopup(provider)
-        .then((result) => {
+    // Cambiamos signInWithPopup por signInWithRedirect
+    auth.signInWithRedirect(provider)
+        .catch((error) => {
+            console.error(error);
+            alert("Error al iniciar sesión con Google: " + error.message);
+        });
+}
+auth.getRedirectResult()
+    .then((result) => {
+        if (result && result.user) {
             const user = result.user;
             
-            // Chequeamos si es la primera vez que entra para guardarlo en la base de datos
+            // Chequeamos si es la primera vez que entra para guardarlo en Firestore
             db.collection('users').doc(user.uid).get().then((doc) => {
                 if (!doc.exists) {
                     db.collection('users').doc(user.uid).set({
@@ -230,12 +238,11 @@ function loginWithGoogle() {
             });
             
             closeModal('auth-modal');
-        })
-        .catch((error) => {
-            console.error(error);
-            alert("Error al iniciar sesión con Google: " + error.message);
-        });
-}
+        }
+    })
+    .catch((error) => {
+        console.error("Error al procesar el retorno de Google: ", error);
+    });
 
 function registerUser() { 
     const nombre = document.getElementById('reg-nombre').value.trim();
