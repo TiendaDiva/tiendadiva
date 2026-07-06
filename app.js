@@ -237,6 +237,7 @@ function loginWithGoogle() {
         });
 }
 
+
 function registerUser() { 
     const nombre = document.getElementById('reg-nombre').value.trim();
     const apellido = document.getElementById('reg-apellido').value.trim();
