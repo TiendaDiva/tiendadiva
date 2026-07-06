@@ -158,7 +158,6 @@ function cargarEstadisticas() {
             container.innerHTML = '<p style="color:#ff6b6b;">Error al cargar datos.</p>';
         });
 }
-
 // --- AUTH ---
 auth.onAuthStateChanged(user => {
     const btnLogin = document.getElementById('btn-login-trigger');
@@ -168,11 +167,27 @@ auth.onAuthStateChanged(user => {
     if (user) {
         btnLogin.style.display = 'none';
         userDisplay.style.display = 'flex';
-        document.getElementById('user-email-text').innerText = "Hola, " + user.email.split('@')[0];
         
+        // Si el usuario entró con Google y tiene displayName, usamos el primer nombre.
+        // Si no, usamos la primera parte de su correo.
+        let nombreMostrar = user.displayName ? user.displayName.split(' ')[0] : user.email.split('@')[0];
+        document.getElementById('user-email-text').innerText = "Hola, " + nombreMostrar;
+        
+        // Verificamos si ya existe en la base de datos, si no existe lo creamos
+        db.collection('users').doc(user.uid).get().then((doc) => {
+            if (!doc.exists) {
+                db.collection('users').doc(user.uid).set({
+                    nombre: user.displayName ? user.displayName.split(' ')[0] : nombreMostrar,
+                    apellido: user.displayName ? user.displayName.split(' ').slice(1).join(' ') : '',
+                    email: user.email,
+                    fechaRegistro: new Date()
+                }).catch(e => console.error("Error al crear usuario nuevo en Firestore:", e));
+            }
+        });
+
         if (user.email === ADMIN_EMAIL) {
             adminPanel.style.display = 'block';
-            cargarEstadisticas(); // Cargamos métricas si es admin
+            cargarEstadisticas(); 
         } else {
             adminPanel.style.display = 'none';
             if (statsUnsubscribe) statsUnsubscribe();
