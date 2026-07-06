@@ -210,24 +210,45 @@ function togglePass(id) {
 }
 
 // --- REGISTRO Y LOGIN ---
+
+function loginWithGoogle() {
+    const provider = new firebase.auth.GoogleAuthProvider();
+    auth.signInWithPopup(provider)
+        .then((result) => {
+            const user = result.user;
+            
+            // Chequeamos si es la primera vez que entra para guardarlo en la base de datos
+            db.collection('users').doc(user.uid).get().then((doc) => {
+                if (!doc.exists) {
+                    db.collection('users').doc(user.uid).set({
+                        nombre: user.displayName ? user.displayName.split(' ')[0] : 'Usuario',
+                        apellido: user.displayName ? user.displayName.split(' ').slice(1).join(' ') : '',
+                        email: user.email,
+                        fechaRegistro: new Date()
+                    });
+                }
+            });
+            
+            closeModal('auth-modal');
+        })
+        .catch((error) => {
+            console.error(error);
+            alert("Error al iniciar sesión con Google: " + error.message);
+        });
+}
+
 function registerUser() { 
-    const dni = document.getElementById('reg-dni').value.trim();
     const nombre = document.getElementById('reg-nombre').value.trim();
     const apellido = document.getElementById('reg-apellido').value.trim();
     const email = document.getElementById('reg-email').value.trim();
-    const celular = document.getElementById('reg-celular').value.trim();
     const pass = document.getElementById('reg-pass').value;
     const passConf = document.getElementById('reg-pass-conf').value;
 
-    const regexDNI = /^\d{8}$/;
-    if (!regexDNI.test(dni)) return alert("⚠️ Error en DNI: Debe contener exactamente 8 números.");
     const regexNombres = /^[a-zA-ZÀ-ÿ\s]+$/;
     if (!regexNombres.test(nombre)) return alert("⚠️ Error en Nombre: Solo letras.");
     if (!regexNombres.test(apellido)) return alert("⚠️ Error en Apellido: Solo letras.");
     const regexEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!regexEmail.test(email)) return alert("⚠️ Error: Email inválido.");
-    const regexCel = /^\d{10}$/;
-    if (!regexCel.test(celular)) return alert("⚠️ Error en Celular: Deben ser 10 números (Cód. Área + Nro).");
 
     if (!pass || !passConf) return alert("Faltan contraseñas.");
     if (pass !== passConf) return alert("Las contraseñas no coinciden.");
@@ -235,44 +256,42 @@ function registerUser() {
     
     auth.createUserWithEmailAndPassword(email, pass).then((userCredential) => {
         const user = userCredential.user;
-        return db.collection('users').doc(user.uid).set({dni, nombre, apellido, email, celular, fechaRegistro: new Date()});
+        return db.collection('users').doc(user.uid).set({nombre, apellido, email, fechaRegistro: new Date()});
     }).then(() => {
         alert("¡Cuenta creada con éxito! Bienvenido " + nombre);
         closeModal('auth-modal');
-        document.getElementById('reg-dni').value = ''; document.getElementById('reg-nombre').value = ''; 
-        document.getElementById('reg-apellido').value = ''; document.getElementById('reg-email').value = ''; 
-        document.getElementById('reg-celular').value = ''; document.getElementById('reg-pass').value = ''; 
+        document.getElementById('reg-nombre').value = ''; 
+        document.getElementById('reg-apellido').value = ''; 
+        document.getElementById('reg-email').value = ''; 
+        document.getElementById('reg-pass').value = ''; 
         document.getElementById('reg-pass-conf').value = '';
     }).catch((error) => { console.error(error); alert("Error: " + error.message); });
 }
 
 function loginUser(){
     const e = document.getElementById('login-email').value, p = document.getElementById('login-pass').value;
-    if(!e || !p) return alert("Ingresa email y contraseña");
+    if(!e || !p) return alert("Ingresá email y contraseña");
     auth.signInWithEmailAndPassword(e, p).then(() => closeModal('auth-modal')).catch((error) => alert("Error de credenciales."));
 }
 
 function validateAndRecover() {
     const email = document.getElementById('rec-email').value.trim();
-    const dni = document.getElementById('rec-dni').value.trim();
-    const celular = document.getElementById('rec-celular').value.trim();
-    if(!email || !dni || !celular) return alert("Completá todos los campos.");
+    if(!email) return alert("Completá el campo de email.");
 
-    db.collection('users').where('email', '==', email).get()
-        .then(querySnapshot => {
-            if (querySnapshot.empty) return alert("❌ Email no registrado.");
-            let usuarioEncontrado = false;
-            querySnapshot.forEach(doc => {
-                const data = doc.data();
-                if(data.dni === dni && data.celular === celular) usuarioEncontrado = true;
-            });
-            if (usuarioEncontrado) {
-                auth.sendPasswordResetEmail(email)
-                    .then(() => { alert("✅ Datos Validados. Revisa tu correo."); toggleAuthView('login'); })
-                    .catch((e) => alert("Error: " + e.message));
-            } else { alert("❌ Los datos no coinciden."); }
+    // Le decimos a Firebase que mande el link directamente
+    auth.sendPasswordResetEmail(email)
+        .then(() => { 
+            alert("✅ Te enviamos un link de recuperación. Revisá tu bandeja de entrada o la carpeta de SPAM."); 
+            toggleAuthView('login'); 
+            document.getElementById('rec-email').value = '';
         })
-        .catch(error => alert("Error de conexión."));
+        .catch((e) => {
+            if(e.code === 'auth/user-not-found') {
+                alert("❌ El email ingresado no está registrado.");
+            } else {
+                alert("Error: " + e.message);
+            }
+        });
 }
 
 function logoutUser(){ auth.signOut(); }
