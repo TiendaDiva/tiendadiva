@@ -228,8 +228,40 @@ function togglePass(id) {
 
 function loginWithGoogle() {
     const provider = new firebase.auth.GoogleAuthProvider();
-    // Forzamos el redireccionamiento puro
-    auth.signInWithRedirect(provider);
+    
+    // Esto obliga a Google a mostrar siempre la ventana de selección de cuenta,
+    // evitando que el navegador asuma que es un popup automático y lo bloquee.
+    provider.setCustomParameters({
+        prompt: 'select_account'
+    });
+
+    auth.signInWithPopup(provider)
+        .then((result) => {
+            const user = result.user;
+            
+            // Verificamos si es nuevo para guardarlo en la base de datos
+            db.collection('users').doc(user.uid).get().then((doc) => {
+                if (!doc.exists) {
+                    db.collection('users').doc(user.uid).set({
+                        nombre: user.displayName ? user.displayName.split(' ')[0] : 'Usuario',
+                        apellido: user.displayName ? user.displayName.split(' ').slice(1).join(' ') : '',
+                        email: user.email,
+                        fechaRegistro: new Date()
+                    });
+                }
+            });
+            
+            closeModal('auth-modal');
+        })
+        .catch((error) => {
+            // Manejo específico del error de cierre de ventana
+            if (error.code === 'auth/popup-closed-by-user') {
+                alert("⚠️ La ventana de Google se cerró antes de terminar. Por favor, tocá el botón y dejá que cargue la pantalla de cuentas.");
+            } else {
+                console.error(error);
+                alert("Error al iniciar sesión: " + error.message);
+            }
+        });
 }
 
 function registerUser() { 
